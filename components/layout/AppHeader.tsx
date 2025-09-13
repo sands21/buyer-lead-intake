@@ -12,8 +12,8 @@ export function AppHeader() {
           <Button variant="ghost" asChild>
             <Link href="/buyers">Buyers</Link>
           </Button>
-          <Button size="sm" variant="outline">
-            Sign in
+          <Button size="sm" variant="outline" asChild>
+            <Link href="/login">Sign in</Link>
           </Button>
         </div>
       </div>
