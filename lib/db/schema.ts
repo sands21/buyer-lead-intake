@@ -43,6 +43,10 @@ export const buyers = pgTable(
       phoneIdx: index("buyers_phone_idx").on(table.phone),
       ownerIdx: index("buyers_owner_id_idx").on(table.ownerId),
       updatedAtIdx: index("buyers_updated_at_idx").on(table.updatedAt),
+      ownerUpdatedIdx: index("buyers_owner_updated_idx").on(
+        table.ownerId,
+        table.updatedAt
+      ),
       // Constraints mirroring architecture.md
       fullNameLength: check(
         "buyers_full_name_length",

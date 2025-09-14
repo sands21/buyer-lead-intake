@@ -7,6 +7,7 @@ import { getServerSession } from "@/lib/auth";
 import { createBuyer } from "@/lib/db/queries";
 import { listBuyers } from "@/lib/db/queries";
 import { buyers } from "@/lib/db/schema";
+import { allow, rateLimitKey } from "@/lib/rate-limit";
 
 function toCamelCase(
   input: unknown
@@ -54,6 +55,15 @@ export async function POST(req: Request) {
   const user = await getServerSession();
   if (!user)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  // Rate limit: 5 creates per 10 seconds per user
+  const key = rateLimitKey(user.id, "POST /api/buyers");
+  if (!allow({ key, capacity: 5, windowMs: 10_000 })) {
+    return NextResponse.json(
+      { error: "Too many requests. Please wait a moment and try again." },
+      { status: 429 }
+    );
+  }
 
   let json: unknown;
   try {

@@ -8,6 +8,7 @@ import {
   listBuyerHistory,
 } from "@/lib/db/queries";
 import { buyers } from "@/lib/db/schema";
+import { allow, rateLimitKey } from "@/lib/rate-limit";
 
 type Params = { params: { id: string } };
 
@@ -27,6 +28,15 @@ export async function PUT(req: Request, { params }: Params) {
   const user = await getServerSession();
   if (!user)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  // Rate limit: 10 updates per 10 seconds per user
+  const key = rateLimitKey(user.id, `PUT /api/buyers/${params.id}`);
+  if (!allow({ key, capacity: 10, windowMs: 10_000 })) {
+    return NextResponse.json(
+      { error: "Too many requests. Please wait a moment and try again." },
+      { status: 429 }
+    );
+  }
 
   let body: unknown;
   try {

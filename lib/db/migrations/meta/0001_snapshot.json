@@ -1,0 +1,381 @@
+{
+  "id": "10170d55-dbe6-4d2e-a593-87799832a3a1",
+  "prevId": "1f66320a-bbdf-4bce-95d7-c72cce2be404",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.buyer_history": {
+      "name": "buyer_history",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "buyer_id": {
+          "name": "buyer_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "changed_by": {
+          "name": "changed_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "changed_at": {
+          "name": "changed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "diff": {
+          "name": "diff",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "buyer_history_buyer_id_idx": {
+          "name": "buyer_history_buyer_id_idx",
+          "columns": [
+            {
+              "expression": "buyer_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "buyer_history_changed_by_idx": {
+          "name": "buyer_history_changed_by_idx",
+          "columns": [
+            {
+              "expression": "changed_by",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "buyer_history_changed_at_idx": {
+          "name": "buyer_history_changed_at_idx",
+          "columns": [
+            {
+              "expression": "changed_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "buyer_history_buyer_id_buyers_id_fk": {
+          "name": "buyer_history_buyer_id_buyers_id_fk",
+          "tableFrom": "buyer_history",
+          "tableTo": "buyers",
+          "columnsFrom": [
+            "buyer_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.buyers": {
+      "name": "buyers",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "full_name": {
+          "name": "full_name",
+          "type": "varchar(80)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "email": {
+          "name": "email",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "phone": {
+          "name": "phone",
+          "type": "varchar(15)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "city": {
+          "name": "city",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "property_type": {
+          "name": "property_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "bhk": {
+          "name": "bhk",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "purpose": {
+          "name": "purpose",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "budget_min": {
+          "name": "budget_min",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "budget_max": {
+          "name": "budget_max",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "timeline": {
+          "name": "timeline",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "source": {
+          "name": "source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'New'"
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tags": {
+          "name": "tags",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'{}'::text[]"
+        },
+        "owner_id": {
+          "name": "owner_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "buyers_email_idx": {
+          "name": "buyers_email_idx",
+          "columns": [
+            {
+              "expression": "email",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "buyers_phone_idx": {
+          "name": "buyers_phone_idx",
+          "columns": [
+            {
+              "expression": "phone",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "buyers_owner_id_idx": {
+          "name": "buyers_owner_id_idx",
+          "columns": [
+            {
+              "expression": "owner_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "buyers_updated_at_idx": {
+          "name": "buyers_updated_at_idx",
+          "columns": [
+            {
+              "expression": "updated_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "buyers_owner_updated_idx": {
+          "name": "buyers_owner_updated_idx",
+          "columns": [
+            {
+              "expression": "owner_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "updated_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "buyers_full_name_length": {
+          "name": "buyers_full_name_length",
+          "value": "char_length(\"buyers\".\"full_name\") >= 2"
+        },
+        "buyers_phone_format": {
+          "name": "buyers_phone_format",
+          "value": "\"buyers\".\"phone\" ~ '^[0-9]{10,15}$'"
+        },
+        "buyers_city_check": {
+          "name": "buyers_city_check",
+          "value": "\"buyers\".\"city\" IN ('Chandigarh','Mohali','Zirakpur','Panchkula','Other')"
+        },
+        "buyers_property_type_check": {
+          "name": "buyers_property_type_check",
+          "value": "\"buyers\".\"property_type\" IN ('Apartment','Villa','Plot','Office','Retail')"
+        },
+        "buyers_bhk_check": {
+          "name": "buyers_bhk_check",
+          "value": "\"buyers\".\"bhk\" IS NULL OR \"buyers\".\"bhk\" IN ('1','2','3','4','Studio')"
+        },
+        "buyers_purpose_check": {
+          "name": "buyers_purpose_check",
+          "value": "\"buyers\".\"purpose\" IN ('Buy','Rent')"
+        },
+        "buyers_budget_min_check": {
+          "name": "buyers_budget_min_check",
+          "value": "\"buyers\".\"budget_min\" IS NULL OR \"buyers\".\"budget_min\" >= 0"
+        },
+        "buyers_budget_max_check": {
+          "name": "buyers_budget_max_check",
+          "value": "\"buyers\".\"budget_max\" IS NULL OR \"buyers\".\"budget_min\" IS NULL OR \"buyers\".\"budget_max\" >= \"buyers\".\"budget_min\""
+        },
+        "buyers_timeline_check": {
+          "name": "buyers_timeline_check",
+          "value": "\"buyers\".\"timeline\" IN ('0-3m','3-6m','>6m','Exploring')"
+        },
+        "buyers_source_check": {
+          "name": "buyers_source_check",
+          "value": "\"buyers\".\"source\" IN ('Website','Referral','Walk-in','Call','Other')"
+        },
+        "buyers_status_check": {
+          "name": "buyers_status_check",
+          "value": "\"buyers\".\"status\" IN ('New','Qualified','Contacted','Visited','Negotiation','Converted','Dropped')"
+        },
+        "buyers_notes_length": {
+          "name": "buyers_notes_length",
+          "value": "\"buyers\".\"notes\" IS NULL OR char_length(\"buyers\".\"notes\") <= 1000"
+        }
+      },
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {},
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}
