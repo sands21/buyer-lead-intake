@@ -162,3 +162,64 @@ export async function listBuyerHistory(buyerId: string) {
     .limit(5);
   return rows;
 }
+
+// Dashboard stats
+export type DashboardStats = {
+  total: number;
+  statusCounts: Record<string, number>;
+  updatedTrend: { day: string; count: number }[]; 
+};
+
+export async function getDashboardStats(
+  ownerId: string
+): Promise<DashboardStats> {
+  const [{ total }] = await db
+    .select({ total: sql<number>`count(*)` })
+    .from(buyers)
+    .where(eq(buyers.ownerId, ownerId));
+
+  const statusRows = await db
+    .select({ status: buyers.status, count: sql<number>`count(*)` })
+    .from(buyers)
+    .where(eq(buyers.ownerId, ownerId))
+    .groupBy(buyers.status);
+
+  const statusCounts: Record<string, number> = {};
+  for (const r of statusRows) statusCounts[r.status] = Number(r.count);
+
+  const trendResult = await db.execute(
+    sql`SELECT date_trunc('day', updated_at) AS day, count(*)::int AS count
+        FROM buyers
+        WHERE owner_id = ${ownerId} AND updated_at >= now() - interval '6 days'
+        GROUP BY 1
+        ORDER BY 1`
+  );
+  const rowsRaw = trendResult as unknown as Array<{
+    day: string;
+    count: number;
+  }>;
+
+  // Fill missing days
+  const map = new Map<string, number>();
+  for (const r of rowsRaw) {
+    const d = new Date(r.day);
+    const key = new Date(
+      Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())
+    )
+      .toISOString()
+      .slice(0, 10);
+    map.set(key, Number(r.count));
+  }
+  const today = new Date();
+  const days: { day: string; count: number }[] = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(
+      Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate())
+    );
+    d.setUTCDate(d.getUTCDate() - i);
+    const key = d.toISOString().slice(0, 10);
+    days.push({ day: key, count: map.get(key) ?? 0 });
+  }
+
+  return { total: Number(total), statusCounts, updatedTrend: days };
+}

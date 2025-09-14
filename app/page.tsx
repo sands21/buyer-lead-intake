@@ -1,10 +1,9 @@
 import Link from "next/link";
 import { getServerSession } from "@/lib/auth";
-import { listBuyers } from "@/lib/db/queries";
+import { listBuyers, getDashboardStats } from "@/lib/db/queries";
 
 export default async function HomePage() {
   const user = await getServerSession();
-  // Public landing if not logged in
   if (!user) {
     return (
       <div className="mx-auto max-w-3xl space-y-6 p-6">
@@ -19,8 +18,7 @@ export default async function HomePage() {
     );
   }
 
-  // Fetch first page for quick stats and recent
-  const { rows, total } = await listBuyers({
+  const { rows } = await listBuyers({
     ownerId: user.id,
     page: 1,
     limit: 5,
@@ -28,12 +26,11 @@ export default async function HomePage() {
     order: "desc",
   });
   const recent = rows;
+  const stats = await getDashboardStats(user.id);
 
-  // Compute quick breakdowns from recent + total (simple; for large data a dedicated query would be better)
-  const statusCounts = recent.reduce<Record<string, number>>((acc, r) => {
-    acc[r.status] = (acc[r.status] ?? 0) + 1;
-    return acc;
-  }, {});
+  const topStatus =
+    Object.entries(stats.statusCounts).sort((a, b) => b[1] - a[1])[0]?.[0] ??
+    "—";
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 p-6">
@@ -41,65 +38,96 @@ export default async function HomePage() {
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <div className="rounded-md border p-4">
           <div className="text-sm opacity-70">Total buyers</div>
-          <div className="text-2xl font-semibold">{total}</div>
+          <div className="text-2xl font-semibold">{stats.total}</div>
         </div>
         <div className="rounded-md border p-4">
-          <div className="text-sm opacity-70">Recently updated</div>
-          <div className="text-2xl font-semibold">{recent.length}</div>
+          <div className="text-sm opacity-70">Top status</div>
+          <div className="text-2xl font-semibold">{topStatus}</div>
         </div>
         <div className="rounded-md border p-4">
-          <div className="text-sm opacity-70">Top status (last 5)</div>
-          <div className="text-2xl font-semibold">
-            {Object.entries(statusCounts).sort((a, b) => b[1] - a[1])[0]?.[0] ??
-              "—"}
+          <div className="text-sm opacity-70">Updated last 7 days</div>
+          <div className="flex items-end gap-1 pt-2">
+            {stats.updatedTrend.map((d) => (
+              <div key={d.day} className="flex flex-col items-center gap-1">
+                <div
+                  className="w-6 rounded-sm bg-gray-200"
+                  style={{ height: `${Math.min(60, d.count * 8)}px` }}
+                  title={`${d.day}: ${d.count}`}
+                />
+                <div className="text-[10px] opacity-70">{d.day.slice(5)}</div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
 
-      <div className="rounded-md border">
-        <div className="flex items-center justify-between border-b p-3">
-          <div className="font-medium">Recent activity</div>
-          <Link href="/buyers" className="text-sm underline">
-            View all
-          </Link>
-        </div>
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-left">
-              <th className="py-2 pl-3">Name</th>
-              <th className="py-2">Phone</th>
-              <th className="py-2">City</th>
-              <th className="py-2">Status</th>
-              <th className="py-2 pr-3 text-right">Updated</th>
-            </tr>
-          </thead>
-          <tbody>
-            {recent.length === 0 ? (
-              <tr>
-                <td
-                  colSpan={5}
-                  className="py-6 text-center text-muted-foreground"
-                >
-                  No recent activity
-                </td>
-              </tr>
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="rounded-md border">
+          <div className="border-b p-3 font-medium">Status breakdown</div>
+          <ul className="p-3 text-sm">
+            {Object.entries(stats.statusCounts).length === 0 ? (
+              <li className="opacity-70">No data</li>
             ) : (
-              recent.map((r) => (
-                <tr key={r.id} className="border-t">
-                  <td className="py-2 pl-3">{r.fullName}</td>
-                  <td className="py-2">{r.phone}</td>
-                  <td className="py-2">{r.city}</td>
-                  <td className="py-2">{r.status}</td>
-                  <td className="py-2 pr-3 text-right">
-                    {new Date(
-                      r.updatedAt ?? r.createdAt ?? Date.now()
-                    ).toLocaleString()}
+              Object.entries(stats.statusCounts)
+                .sort((a, b) => b[1] - a[1])
+                .map(([s, c]) => (
+                  <li
+                    key={s}
+                    className="flex items-center justify-between py-1"
+                  >
+                    <span>{s}</span>
+                    <span className="font-medium">{c}</span>
+                  </li>
+                ))
+            )}
+          </ul>
+        </div>
+
+        <div className="rounded-md border">
+          <div className="flex items-center justify-between border-b p-3">
+            <div className="font-medium">Recent activity</div>
+            <Link href="/buyers" className="text-sm underline">
+              View all
+            </Link>
+          </div>
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-left">
+                <th className="py-2 pl-3">Name</th>
+                <th className="py-2">Phone</th>
+                <th className="py-2">City</th>
+                <th className="py-2">Status</th>
+                <th className="py-2 pr-3 text-right">Updated</th>
+              </tr>
+            </thead>
+            <tbody>
+              {recent.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={5}
+                    className="py-6 text-center text-muted-foreground"
+                  >
+                    No recent activity
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : (
+                recent.map((r) => (
+                  <tr key={r.id} className="border-t">
+                    <td className="py-2 pl-3">{r.fullName}</td>
+                    <td className="py-2">{r.phone}</td>
+                    <td className="py-2">{r.city}</td>
+                    <td className="py-2">{r.status}</td>
+                    <td className="py-2 pr-3 text-right">
+                      {new Date(
+                        r.updatedAt ?? r.createdAt ?? Date.now()
+                      ).toLocaleString()}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
