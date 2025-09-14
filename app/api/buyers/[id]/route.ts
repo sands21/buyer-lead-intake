@@ -47,9 +47,19 @@ export async function PUT(req: Request, { params }: Params) {
   const expectedUpdatedAtRaw = (
     body as Record<string, unknown> | null | undefined
   )?.updatedAt as string | undefined;
-  const expectedUpdatedAt = expectedUpdatedAtRaw
-    ? new Date(expectedUpdatedAtRaw)
-    : undefined;
+
+  let expectedUpdatedAt: Date | undefined;
+  if (expectedUpdatedAtRaw) {
+    try {
+      expectedUpdatedAt = new Date(expectedUpdatedAtRaw);
+      // Check if the date is valid
+      if (isNaN(expectedUpdatedAt.getTime())) {
+        expectedUpdatedAt = undefined;
+      }
+    } catch {
+      expectedUpdatedAt = undefined;
+    }
+  }
 
   // Map to columns (camelCase to DB insert/update shape)
   type InsertShape = typeof buyers.$inferInsert;

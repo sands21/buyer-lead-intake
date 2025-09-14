@@ -228,16 +228,30 @@ export default function BuyerDetailPage() {
           <p className="text-sm text-muted-foreground">No changes yet.</p>
         ) : (
           <ul className="space-y-2 text-sm">
-            {history.map((h) => (
-              <li key={h.id} className="rounded border p-2">
-                <div className="mb-1 opacity-70">
-                  {new Date(h.changedAt).toLocaleString()}
-                </div>
-                <pre className="whitespace-pre-wrap break-words">
-                  {JSON.stringify(h.diff, null, 2)}
-                </pre>
-              </li>
-            ))}
+            {history.map((h) => {
+              const entries = Object.entries(
+                h.diff as Record<string, { old: unknown; new: unknown }>
+              );
+              return (
+                <li key={h.id} className="rounded border p-2">
+                  <div className="mb-1 opacity-70">
+                    {new Date(h.changedAt).toLocaleString()}
+                  </div>
+                  {entries.length === 0 ? (
+                    <div className="italic opacity-70">No field changes</div>
+                  ) : (
+                    <ul className="list-disc pl-5 space-y-1">
+                      {entries.map(([field, val]) => (
+                        <li key={field}>
+                          <span className="font-medium">{field}</span>:{" "}
+                          {JSON.stringify(val.old)} → {JSON.stringify(val.new)}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         )}
       </div>

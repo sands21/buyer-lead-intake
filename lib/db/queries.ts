@@ -84,33 +84,50 @@ export async function updateBuyer(
   input: Partial<typeof buyers.$inferInsert>,
   expectedUpdatedAt?: Date
 ) {
-  // Ownership check via where clause; optimistic concurrency via updatedAt match
-  const where = [eq(buyers.id, id), eq(buyers.ownerId, ownerId)];
-  if (expectedUpdatedAt) {
-    where.push(eq(buyers.updatedAt, expectedUpdatedAt));
-  }
-
+  // First get the current record for comparison
   const [before] = await db
     .select()
     .from(buyers)
     .where(and(eq(buyers.id, id), eq(buyers.ownerId, ownerId)));
 
+  if (!before) return null; // not found
+
+  // Check optimistic concurrency: if expectedUpdatedAt is provided, it must match
+  if (expectedUpdatedAt && before.updatedAt) {
+    const currentUpdatedAt = new Date(before.updatedAt);
+    const expectedTime = expectedUpdatedAt.getTime();
+    const currentTime = currentUpdatedAt.getTime();
+
+    // Allow for small timestamp differences (within 1 second)
+    if (Math.abs(expectedTime - currentTime) > 1000) {
+      return null; // concurrency conflict
+    }
+  }
+
+  // Proceed with update
   const [row] = await db
     .update(buyers)
     .set({ ...input, updatedAt: sql`now()` })
-    .where(and(...where))
+    .where(and(eq(buyers.id, id), eq(buyers.ownerId, ownerId)))
     .returning();
 
-  if (!row) return null; // not found or concurrency conflict
+  if (!row) return null; // update failed
 
-  // History tracking (diff minimal: store provided fields)
-  const diff: Record<string, unknown> = {};
-  for (const [k, v] of Object.entries(input)) diff[k] = v;
-  await db.insert(buyerHistory).values({
-    buyerId: id,
-    changedBy: ownerId,
-    diff,
-  });
+  // History tracking with old/new values for changed fields
+  const diff: Record<string, { old: unknown; new: unknown }> = {};
+  for (const [key, newVal] of Object.entries(input)) {
+    if (typeof newVal === "undefined") continue;
+    const oldVal = (before as Record<string, unknown>)[key];
+    const changed = JSON.stringify(oldVal) !== JSON.stringify(newVal);
+    if (changed) diff[key] = { old: oldVal ?? null, new: newVal ?? null };
+  }
+  if (Object.keys(diff).length > 0) {
+    await db.insert(buyerHistory).values({
+      buyerId: id,
+      changedBy: ownerId,
+      diff,
+    });
+  }
 
   return { before, after: row };
 }

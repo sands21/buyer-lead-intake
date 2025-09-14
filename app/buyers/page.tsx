@@ -48,14 +48,17 @@ export default async function BuyersPage({
   const status = (searchParams.status as string | undefined) ?? null;
   const timeline = (searchParams.timeline as string | undefined) ?? null;
 
-  const { rows, total } = await fetchBuyers({
-    search,
+  // Await searchParams access where needed for dynamic rendering
+  const resolvedSearchParams = {
     page,
+    search,
     city,
     propertyType,
     status,
     timeline,
-  });
+  };
+
+  const { rows, total } = await fetchBuyers(resolvedSearchParams);
   const totalPages = Math.max(1, Math.ceil(total / 10));
 
   const cityOptions = [
@@ -94,9 +97,26 @@ export default async function BuyersPage({
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Buyers</h1>
-        <Link href="/buyers/new" className="underline">
-          New
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link
+            href={{
+              pathname: "/api/export",
+              query: {
+                ...(search ? { search } : {}),
+                ...(city ? { city } : {}),
+                ...(propertyType ? { propertyType } : {}),
+                ...(status ? { status } : {}),
+                ...(timeline ? { timeline } : {}),
+              },
+            }}
+            className="underline"
+          >
+            Export CSV
+          </Link>
+          <Link href="/buyers/new" className="underline">
+            New
+          </Link>
+        </div>
       </div>
 
       <form action="" className="flex flex-wrap gap-2 items-center">
