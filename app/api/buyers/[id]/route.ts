@@ -10,17 +10,18 @@ import {
 import { buyers } from "@/lib/db/schema";
 import { allow, rateLimitKey } from "@/lib/rate-limit";
 
-type Params = { params: { id: string } };
+type Params = { params: Promise<{ id: string }> };
 
 export async function GET(_req: Request, { params }: Params) {
   const user = await getServerSession();
   if (!user)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const buyer = await getBuyerById(params.id, user.id);
+  const { id } = await params;
+  const buyer = await getBuyerById(id, user.id);
   if (!buyer) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const history = await listBuyerHistory(params.id);
+  const history = await listBuyerHistory(id);
   return NextResponse.json({ buyer, history });
 }
 
@@ -29,8 +30,9 @@ export async function PUT(req: Request, { params }: Params) {
   if (!user)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  const { id } = await params;
   // Rate limit: 10 updates per 10 seconds per user
-  const key = rateLimitKey(user.id, `PUT /api/buyers/${params.id}`);
+  const key = rateLimitKey(user.id, `PUT /api/buyers/${id}`);
   if (!allow({ key, capacity: 10, windowMs: 10_000 })) {
     return NextResponse.json(
       { error: "Too many requests. Please wait a moment and try again." },
@@ -90,12 +92,7 @@ export async function PUT(req: Request, { params }: Params) {
     tags: parsed.data.tags ?? [],
   };
 
-  const result = await updateBuyer(
-    params.id,
-    user.id,
-    payload,
-    expectedUpdatedAt
-  );
+  const result = await updateBuyer(id, user.id, payload, expectedUpdatedAt);
   if (!result)
     return NextResponse.json(
       { error: "Conflict or not found" },
@@ -108,7 +105,8 @@ export async function DELETE(_req: Request, { params }: Params) {
   const user = await getServerSession();
   if (!user)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const row = await deleteBuyer(params.id, user.id);
+  const { id } = await params;
+  const row = await deleteBuyer(id, user.id);
   if (!row) return NextResponse.json({ error: "Not found" }, { status: 404 });
   return NextResponse.json({ ok: true });
 }

@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase";
 
-export default function CallbackPage() {
+function CallbackHandler() {
   const router = useRouter();
   const search = useSearchParams();
   const redirect = search.get("redirect") || "/buyers";
@@ -36,4 +36,12 @@ export default function CallbackPage() {
 
   if (error) return <p className="text-destructive">{error}</p>;
   return <p>Signing you in...</p>;
+}
+
+export default function CallbackPage() {
+  return (
+    <Suspense fallback={<p>Loading...</p>}>
+      <CallbackHandler />
+    </Suspense>
+  );
 }
