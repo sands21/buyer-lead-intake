@@ -33,7 +33,7 @@ export const buyers = pgTable(
     tags: text("tags")
       .array()
       .default(sql`'{}'::text[]`),
-    ownerId: uuid("owner_id").notNull(), 
+    ownerId: uuid("owner_id").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
   },

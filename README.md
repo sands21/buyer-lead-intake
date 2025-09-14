@@ -22,11 +22,13 @@ Validation rules are implemented in `lib/validations/buyer.ts` and enforced both
 - Auth: magic-link login and server callback via `@supabase/ssr`.
 - Create lead (`/buyers/new`) with full Zod validation and history entry creation.
 - List and search (`/buyers`): SSR pagination (10/page), URL-synced filters (city, propertyType, status, timeline), debounced search, sort by `updatedAt` desc.
+  - Advanced full‑text search: weighted `tsvector` on `full_name,email,notes` via GIN index, ranked with `ts_rank_cd`; phone uses partial match fallback.
 - View & Edit (`/buyers/[id]`): edit form with `updatedAt` concurrency check and history (last 5).
 - CSV import (`/buyers/import`): client-side parsing, per-row Zod validation, transactional insert via API, max 200 rows.
 - CSV export of current filtered list.
 - Dashboard (`/`): totals, status counts, 7-day updated trend, converted this week, new leads today. Layout fixes for overflow applied.
 - Ownership enforcement: edits/deletes restricted to owner; read allowed to signed-in users.
+  - Admin role: users with `user_metadata.role = "admin"` or in `ADMIN_EMAILS` can edit/delete all.
 - Rate limiting: simple in-memory token-bucket applied to create/update endpoints (`lib/rate-limit.ts`).
 - Tests: Vitest unit tests for validation and several API integration tests.
 
@@ -51,6 +53,7 @@ NEXT_PUBLIC_SUPABASE_URL=...
 NEXT_PUBLIC_SUPABASE_ANON_KEY=...
 SUPABASE_SERVICE_ROLE_KEY=...
 DATABASE_URL=postgresql://postgres:password@db-host:5432/postgres?sslmode=require
+ADMIN_EMAILS= # optional, comma-separated admin emails
 ```
 
 Notes:
@@ -65,14 +68,27 @@ Notes:
 
 Make sure `.env.local` contains a valid `DATABASE_URL` before running Drizzle CLI.
 
+### Search index (production DB)
+
+The FTS column and index are applied on Supabase via SQL. If you need to recreate:
+
+```
+ALTER TABLE public.buyers ADD COLUMN IF NOT EXISTS fts tsvector GENERATED ALWAYS AS (
+  setweight(to_tsvector('simple', coalesce(full_name, '')), 'A') ||
+  setweight(to_tsvector('simple', coalesce(email, '')), 'B') ||
+  setweight(to_tsvector('simple', coalesce(notes, '')), 'C')
+) STORED;
+CREATE INDEX IF NOT EXISTS buyers_fts_idx ON public.buyers USING GIN (fts);
+```
+
 ## Tests
 
 - Run unit/integration tests: `npm test` (Vitest). There are tests for Zod validators and API routes.
 
 ## What's done vs skipped
 
-- Done: core CRUD, SSR list with filters/search, CSV import/export (transactional), optimistic concurrency and history, Zod validation, migrations, tests, dashboard, rate limiting, basic accessibility.
-- Skipped / optional: advanced full-text index (basic ILIKE search implemented).
+- Done: core CRUD, SSR list with filters/search (with FTS), CSV import/export (transactional), optimistic concurrency and history, Zod validation, migrations, tests, dashboard, rate limiting, basic accessibility, admin role, file attachments.
+- Skipped: Admin UI indicators (badge) and private (signed URL) attachments; can add if needed.
 
 ## Deployment checklist (Vercel + Supabase)
 
@@ -87,5 +103,24 @@ npm run db:push
 ```
 
 5. Deploy and verify login, create/edit, CSV import/export, and dashboard.
+
+### Storage (attachments)
+
+Create a bucket named `attachments` and allow public read + authenticated uploads. Minimal SQL:
+
+```
+insert into storage.buckets (id, name, public)
+values ('attachments','attachments', true)
+on conflict (id) do update set public = excluded.public;
+
+create policy if not exists "Public read attachments" on storage.objects
+for select to public using (bucket_id = 'attachments');
+
+create policy if not exists "Authenticated insert attachments" on storage.objects
+for insert to authenticated with check (bucket_id = 'attachments');
+
+create policy if not exists "Authenticated update attachments" on storage.objects
+for update to authenticated using (bucket_id = 'attachments') with check (bucket_id = 'attachments');
+```
 
 If you want, I can add a short release checklist and recommended Postgres indexes or a minimal `vercel` section for preview settings.

@@ -45,9 +45,14 @@ export async function listBuyers(filters: ListFilters) {
   }
 
   if (filters.search) {
-    const q = `%${filters.search}%`;
-    const searchCondition = sql`(${buyers.fullName} ILIKE ${q} OR coalesce(${buyers.email}, '') ILIKE ${q} OR ${buyers.phone} ILIKE ${q} OR coalesce(${buyers.notes}, '') ILIKE ${q})`;
-    where.push(searchCondition);
+    const search = String(filters.search).trim();
+    if (search.length > 0) {
+      // Use full-text search on name, email, notes; exact/partial match fallback on phone
+      const tsQuery = sql`websearch_to_tsquery('simple', ${search})`;
+      const fts = sql`to_tsvector('simple', coalesce(${buyers.fullName}, '') || ' ' || coalesce(${buyers.email}, '') || ' ' || coalesce(${buyers.notes}, '')) @@ ${tsQuery}`;
+      const phoneLike = sql`${buyers.phone} ILIKE ${"%" + search + "%"}`;
+      where.push(sql`(${fts} OR ${phoneLike})`);
+    }
   }
 
   const orderByColumn =
@@ -57,11 +62,27 @@ export async function listBuyers(filters: ListFilters) {
       ? buyers.fullName
       : buyers.updatedAt;
 
+  // If FTS is used, consider ranking for ordering when no explicit sort provided
+  const usingFts = Boolean(
+    filters.search && String(filters.search).trim().length > 0
+  );
+  const rankExpr = usingFts
+    ? sql`ts_rank_cd(fts, websearch_to_tsquery('simple', ${String(
+        filters.search
+      )}))`
+    : null;
+
   const rows = await db
     .select()
     .from(buyers)
     .where(and(...where))
-    .orderBy(filters.order === "asc" ? orderByColumn : desc(orderByColumn))
+    .orderBy(
+      usingFts && !filters.sort
+        ? desc(rankExpr!)
+        : filters.order === "asc"
+        ? orderByColumn
+        : desc(orderByColumn)
+    )
     .limit(limit)
     .offset(offset);
 
