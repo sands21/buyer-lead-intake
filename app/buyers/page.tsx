@@ -105,9 +105,7 @@ export default async function BuyersPage({
   ] as const;
   const timelineOptions = ["", "0-3m", "3-6m", ">6m", "Exploring"] as const;
 
-  const activeFilters =
-    [city, propertyType, status, timeline].filter(Boolean).length +
-    (search ? 1 : 0);
+  // activeFilters was previously computed but unused; removed to satisfy lint
 
   return (
     <SelectionProvider>

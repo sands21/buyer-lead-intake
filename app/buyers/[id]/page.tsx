@@ -9,8 +9,9 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { TagInput } from "@/components/forms/TagInput";
 
-const formSchema = buyerCreateSchema.partial();
-type FormValues = z.infer<typeof formSchema> & { updatedAt?: string };
+type FormValues = Partial<z.infer<typeof buyerCreateSchema>> & {
+  updatedAt?: string;
+};
 
 export default function BuyerDetailPage() {
   const { id } = useParams<{ id: string }>();
