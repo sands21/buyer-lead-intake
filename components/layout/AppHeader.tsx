@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { UserInfo } from "@/components/auth/UserInfo";
 
 export function AppHeader() {
   return (
@@ -12,9 +13,7 @@ export function AppHeader() {
           <Button variant="ghost" asChild>
             <Link href="/buyers">Buyers</Link>
           </Button>
-          <Button size="sm" variant="outline" asChild>
-            <Link href="/login">Sign in</Link>
-          </Button>
+          <UserInfo />
         </div>
       </div>
     </header>

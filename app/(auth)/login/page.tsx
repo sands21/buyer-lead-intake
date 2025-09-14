@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 
@@ -8,15 +9,31 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const router = useRouter();
+  const search = useSearchParams();
+  const redirect = search.get("redirect") || "/buyers";
+
+  useEffect(() => {
+    // If already signed in, skip login and go to redirect target
+    const supabase = createSupabaseBrowserClient();
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session) {
+        router.replace(redirect);
+      }
+    });
+  }, [router, redirect]);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     startTransition(async () => {
       const supabase = createSupabaseBrowserClient();
+      const callbackUrl = `${
+        location.origin
+      }/auth/callback?redirect=${encodeURIComponent(redirect)}`;
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: `${location.origin}/callback`,
+          emailRedirectTo: callbackUrl,
         },
       });
       if (!error) setSent(true);

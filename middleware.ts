@@ -1,7 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 
-export function middleware(_req: NextRequest) {
-  // No-op auth middleware for now; protects buyers routes later
+export async function middleware(_req: NextRequest) {
+  // Temporarily disable auth redirects here to avoid loops; server layouts handle protection
   return NextResponse.next();
 }
 

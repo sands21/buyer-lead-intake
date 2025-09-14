@@ -38,12 +38,11 @@ export const buyerCreateSchema = z
   .object({
     full_name: z.string().min(2).max(80),
     email: z
-      .string()
-      .email()
-      .max(255)
-      .optional()
-      .or(z.literal(""))
-      .transform((v) => (v === "" ? undefined : v)),
+      .preprocess(
+        (v) => (v === "" ? undefined : v),
+        z.string().email().max(255)
+      )
+      .optional(),
     phone: z.string().regex(/^[0-9]{10,15}$/),
     city: cityEnum,
     property_type: propertyTypeEnum,

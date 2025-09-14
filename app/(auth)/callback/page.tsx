@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase";
 
 export default function CallbackPage() {
   const router = useRouter();
+  const search = useSearchParams();
+  const redirect = search.get("redirect") || "/buyers";
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -17,7 +19,7 @@ export default function CallbackPage() {
         return;
       }
       if (data.session) {
-        router.replace("/buyers");
+        router.replace(redirect);
         return;
       }
       // Attempt to exchange code if present
@@ -27,10 +29,10 @@ export default function CallbackPage() {
         setError(exchangeError.message);
         return;
       }
-      router.replace("/buyers");
+      router.replace(redirect);
     }
     handleCallback();
-  }, [router]);
+  }, [router, redirect]);
 
   if (error) return <p className="text-destructive">{error}</p>;
   return <p>Signing you in...</p>;
