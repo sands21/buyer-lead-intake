@@ -1,9 +1,10 @@
-import { and, desc, eq, sql, gte, lte } from "drizzle-orm";
+import { and, desc, eq, sql, gte, lte, SQLWrapper } from "drizzle-orm";
 import { db } from "./client";
 import { buyers, buyerHistory } from "./schema";
 
 export type ListFilters = {
   ownerId: string;
+  admin?: boolean;
   page?: number;
   limit?: number;
   search?: string;
@@ -22,7 +23,10 @@ export async function listBuyers(filters: ListFilters) {
   const limit = filters.limit ?? 10;
   const offset = (page - 1) * limit;
 
-  const where = [eq(buyers.ownerId, filters.ownerId)];
+  const where: SQLWrapper[] = [];
+  if (!filters.admin) {
+    where.push(eq(buyers.ownerId, filters.ownerId));
+  }
 
   if (filters.city) where.push(eq(buyers.city, filters.city));
   if (filters.propertyType)
@@ -69,11 +73,17 @@ export async function listBuyers(filters: ListFilters) {
   return { rows, total: Number(count) };
 }
 
-export async function getBuyerById(id: string, ownerId: string) {
+export async function getBuyerById(
+  id: string,
+  ownerId: string,
+  admin?: boolean
+) {
+  const conditions: SQLWrapper[] = [eq(buyers.id, id)];
+  if (!admin) conditions.push(eq(buyers.ownerId, ownerId));
   const [row] = await db
     .select()
     .from(buyers)
-    .where(and(eq(buyers.id, id), eq(buyers.ownerId, ownerId)));
+    .where(and(...conditions));
   return row ?? null;
 }
 
@@ -95,13 +105,16 @@ export async function updateBuyer(
   id: string,
   ownerId: string,
   input: Partial<typeof buyers.$inferInsert>,
-  expectedUpdatedAt?: Date
+  expectedUpdatedAt?: Date,
+  admin?: boolean
 ) {
   // First get the current record for comparison
+  const beforeConditions: SQLWrapper[] = [eq(buyers.id, id)];
+  if (!admin) beforeConditions.push(eq(buyers.ownerId, ownerId));
   const [before] = await db
     .select()
     .from(buyers)
-    .where(and(eq(buyers.id, id), eq(buyers.ownerId, ownerId)));
+    .where(and(...beforeConditions));
 
   if (!before) return null; // not found
 
@@ -118,10 +131,12 @@ export async function updateBuyer(
   }
 
   // Proceed with update
+  const updateConditions: SQLWrapper[] = [eq(buyers.id, id)];
+  if (!admin) updateConditions.push(eq(buyers.ownerId, ownerId));
   const [row] = await db
     .update(buyers)
     .set({ ...input, updatedAt: sql`now()` })
-    .where(and(eq(buyers.id, id), eq(buyers.ownerId, ownerId)))
+    .where(and(...updateConditions))
     .returning();
 
   if (!row) return null; // update failed
@@ -145,10 +160,16 @@ export async function updateBuyer(
   return { before, after: row };
 }
 
-export async function deleteBuyer(id: string, ownerId: string) {
+export async function deleteBuyer(
+  id: string,
+  ownerId: string,
+  admin?: boolean
+) {
+  const conditions: SQLWrapper[] = [eq(buyers.id, id)];
+  if (!admin) conditions.push(eq(buyers.ownerId, ownerId));
   const [row] = await db
     .delete(buyers)
-    .where(and(eq(buyers.id, id), eq(buyers.ownerId, ownerId)))
+    .where(and(...conditions))
     .returning();
   return row ?? null;
 }

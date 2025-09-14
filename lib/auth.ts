@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
+import type { User } from "@supabase/supabase-js";
 
 export async function getServerSession() {
   const cookieStore = await cookies();
@@ -36,4 +37,17 @@ export async function getServerSession() {
   } catch {
     return null;
   }
+}
+
+export function isAdminUser(user: User | null): boolean {
+  if (!user) return false;
+  const role = (user as unknown as { user_metadata?: Record<string, unknown> })
+    .user_metadata?.role;
+  if (role === "admin") return true;
+  const adminEmails = (process.env.ADMIN_EMAILS || "")
+    .split(",")
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean);
+  const email = (user.email || "").toLowerCase();
+  return adminEmails.includes(email);
 }

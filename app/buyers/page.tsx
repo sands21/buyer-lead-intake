@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getServerSession } from "@/lib/auth";
+import { getServerSession, isAdminUser } from "@/lib/auth";
 import { listBuyers } from "@/lib/db/queries";
 import { redirect } from "next/navigation";
 import { StatusQuickActions } from "@/components/tables/StatusQuickActions";
@@ -35,6 +35,7 @@ async function fetchBuyers({
 
   return await listBuyers({
     ownerId: user.id,
+    admin: isAdminUser(user),
     search: search || undefined,
     city: city || undefined,
     propertyType: propertyType || undefined,

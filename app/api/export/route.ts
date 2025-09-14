@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "@/lib/auth";
+import { getServerSession, isAdminUser } from "@/lib/auth";
 import { buyerSearchParamsSchema } from "@/lib/validations/buyer";
 import { listBuyers } from "@/lib/db/queries";
 
@@ -34,6 +34,7 @@ export async function GET(req: Request) {
 
   const { rows } = await listBuyers({
     ownerId: user.id,
+    admin: isAdminUser(user),
     ...parsed.data,
     limit: 1000,
   });

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "@/lib/auth";
+import { getServerSession, isAdminUser } from "@/lib/auth";
 import { buyerUpdateSchema } from "@/lib/validations/buyer";
 import {
   getBuyerById,
@@ -18,7 +18,7 @@ export async function GET(_req: Request, { params }: Params) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await params;
-  const buyer = await getBuyerById(id, user.id);
+  const buyer = await getBuyerById(id, user.id, isAdminUser(user));
   if (!buyer) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const history = await listBuyerHistory(id);
@@ -92,7 +92,13 @@ export async function PUT(req: Request, { params }: Params) {
     tags: parsed.data.tags ?? [],
   };
 
-  const result = await updateBuyer(id, user.id, payload, expectedUpdatedAt);
+  const result = await updateBuyer(
+    id,
+    user.id,
+    payload,
+    expectedUpdatedAt,
+    isAdminUser(user)
+  );
   if (!result)
     return NextResponse.json(
       { error: "Conflict or not found" },
@@ -106,7 +112,7 @@ export async function DELETE(_req: Request, { params }: Params) {
   if (!user)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const { id } = await params;
-  const row = await deleteBuyer(id, user.id);
+  const row = await deleteBuyer(id, user.id, isAdminUser(user));
   if (!row) return NextResponse.json({ error: "Not found" }, { status: 404 });
   return NextResponse.json({ ok: true });
 }

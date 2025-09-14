@@ -3,7 +3,7 @@ import {
   buyerCreateSchema,
   buyerSearchParamsSchema,
 } from "@/lib/validations/buyer";
-import { getServerSession } from "@/lib/auth";
+import { getServerSession, isAdminUser } from "@/lib/auth";
 import { createBuyer } from "@/lib/db/queries";
 import { listBuyers } from "@/lib/db/queries";
 import { buyers } from "@/lib/db/schema";
@@ -107,6 +107,7 @@ export async function GET(req: Request) {
 
   const { rows, total } = await listBuyers({
     ownerId: user.id,
+    admin: isAdminUser(user),
     ...parsed.data,
   });
   return NextResponse.json({ rows, total });
