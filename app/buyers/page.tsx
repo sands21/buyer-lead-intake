@@ -11,6 +11,8 @@ type Filters = {
   propertyType?: string | null;
   status?: string | null;
   timeline?: string | null;
+  updatedFrom?: string | null;
+  updatedTo?: string | null;
 };
 
 async function fetchBuyers({
@@ -20,6 +22,8 @@ async function fetchBuyers({
   propertyType,
   status,
   timeline,
+  updatedFrom,
+  updatedTo,
 }: Filters) {
   const user = await getServerSession();
   if (!user) redirect("/login");
@@ -31,6 +35,8 @@ async function fetchBuyers({
     propertyType: propertyType || undefined,
     status: status || undefined,
     timeline: timeline || undefined,
+    updatedFrom: updatedFrom || undefined,
+    updatedTo: updatedTo || undefined,
     page,
     limit: 10,
   });
@@ -48,6 +54,8 @@ export default async function BuyersPage({
     (searchParams.propertyType as string | undefined) ?? null;
   const status = (searchParams.status as string | undefined) ?? null;
   const timeline = (searchParams.timeline as string | undefined) ?? null;
+  const updatedFrom = (searchParams.updatedFrom as string | undefined) ?? null;
+  const updatedTo = (searchParams.updatedTo as string | undefined) ?? null;
 
   // Await searchParams access where needed for dynamic rendering
   const resolvedSearchParams = {
@@ -57,6 +65,8 @@ export default async function BuyersPage({
     propertyType,
     status,
     timeline,
+    updatedFrom,
+    updatedTo,
   };
 
   const { rows, total } = await fetchBuyers(resolvedSearchParams);
@@ -171,12 +181,39 @@ export default async function BuyersPage({
             </option>
           ))}
         </select>
+        <input
+          type="date"
+          name="updatedFrom"
+          defaultValue={updatedFrom ?? ""}
+          className="rounded-md border px-3 py-2"
+          aria-label="Updated from"
+        />
+        <input
+          type="date"
+          name="updatedTo"
+          defaultValue={updatedTo ?? ""}
+          className="rounded-md border px-3 py-2"
+          aria-label="Updated to"
+        />
         <button type="submit" className="rounded-md border px-3 py-2">
           Search
         </button>
-        {activeFilters > 0 && (
-          <Link href="/buyers" className="text-sm underline opacity-70">
-            Clear ({activeFilters})
+        {(updatedFrom || updatedTo) && (
+          <Link
+            href={{
+              pathname: "/buyers",
+              query: {
+                ...(search ? { search } : {}),
+                ...(city ? { city } : {}),
+                ...(propertyType ? { propertyType } : {}),
+                ...(status ? { status } : {}),
+                ...(timeline ? { timeline } : {}),
+                ...(page ? { page } : {}),
+              },
+            }}
+            className="text-sm underline opacity-70"
+          >
+            Clear dates
           </Link>
         )}
       </form>

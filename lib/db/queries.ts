@@ -1,4 +1,4 @@
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, sql, gte, lte } from "drizzle-orm";
 import { db } from "./client";
 import { buyers, buyerHistory } from "./schema";
 
@@ -13,6 +13,8 @@ export type ListFilters = {
   timeline?: string;
   sort?: "updatedAt" | "createdAt" | "fullName";
   order?: "asc" | "desc";
+  updatedFrom?: string | Date;
+  updatedTo?: string | Date;
 };
 
 export async function listBuyers(filters: ListFilters) {
@@ -27,9 +29,20 @@ export async function listBuyers(filters: ListFilters) {
     where.push(eq(buyers.propertyType, filters.propertyType));
   if (filters.status) where.push(eq(buyers.status, filters.status));
   if (filters.timeline) where.push(eq(buyers.timeline, filters.timeline));
+
+  // Date range filters on updatedAt
+  if (filters.updatedFrom) {
+    const from = new Date(filters.updatedFrom);
+    if (!isNaN(from.getTime())) where.push(gte(buyers.updatedAt, from));
+  }
+  if (filters.updatedTo) {
+    const to = new Date(filters.updatedTo);
+    if (!isNaN(to.getTime())) where.push(lte(buyers.updatedAt, to));
+  }
+
   if (filters.search) {
     const q = `%${filters.search}%`;
-    const searchCondition = sql`(${buyers.fullName} ILIKE ${q} OR coalesce(${buyers.email}, '') ILIKE ${q} OR ${buyers.phone} ILIKE ${q})`;
+    const searchCondition = sql`(${buyers.fullName} ILIKE ${q} OR coalesce(${buyers.email}, '') ILIKE ${q} OR ${buyers.phone} ILIKE ${q} OR coalesce(${buyers.notes}, '') ILIKE ${q})`;
     where.push(searchCondition);
   }
 

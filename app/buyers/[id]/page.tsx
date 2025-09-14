@@ -7,6 +7,7 @@ import { z } from "zod";
 import { buyerCreateSchema } from "@/lib/validations/buyer";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { TagInput } from "@/components/forms/TagInput";
 
 const formSchema = buyerCreateSchema.partial();
 type FormValues = z.infer<typeof formSchema> & { updatedAt?: string };
@@ -321,6 +322,15 @@ export default function BuyerDetailPage() {
               rows={4}
               placeholder="Notes"
               {...form.register("notes")}
+              disabled={saving}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1">Tags</label>
+            <TagInput
+              value={form.watch("tags") ?? []}
+              onChange={(next) => form.setValue("tags", next)}
               disabled={saving}
             />
           </div>
