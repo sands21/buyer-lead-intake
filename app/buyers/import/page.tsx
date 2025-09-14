@@ -6,6 +6,7 @@ import { z } from "zod";
 import { buyerCsvRowSchema } from "@/lib/validations/buyer";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { toast } from "sonner";
 
 type CsvRow = z.infer<typeof buyerCsvRowSchema>;
 
@@ -92,6 +93,16 @@ export default function ImportBuyersPage() {
           setRows(parsedRows);
           setErrors(parseErrors);
           setParsing(false);
+          toast[parseErrors.length ? "error" : "success"](
+            parseErrors.length
+              ? `Found ${parseErrors.length} invalid row(s)`
+              : `Parsed ${parsedRows.length} valid row(s)`
+          );
+          resolve();
+        },
+        error: (err) => {
+          setParsing(false);
+          toast.error(err.message || "Failed to parse CSV");
           resolve();
         },
       });
@@ -110,12 +121,18 @@ export default function ImportBuyersPage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setResult(data.error ?? "Import failed");
+        const msg = data.error ?? "Import failed";
+        setResult(msg);
+        toast.error(msg);
       } else {
-        setResult(`Imported ${data.inserted} rows successfully`);
+        const msg = `Imported ${data.inserted} rows successfully`;
+        setResult(msg);
+        toast.success(msg);
       }
     } catch (e) {
-      setResult((e as Error).message);
+      const msg = (e as Error).message;
+      setResult(msg);
+      toast.error(msg);
     } finally {
       setUploading(false);
     }
@@ -144,7 +161,7 @@ export default function ImportBuyersPage() {
       </div>
 
       {errors.length > 0 && (
-        <div className="rounded-md border p-3">
+        <div className="rounded-md border p-3" aria-live="polite">
           <div className="mb-2 font-medium">
             Validation errors ({errors.length})
           </div>
@@ -161,14 +178,20 @@ export default function ImportBuyersPage() {
 
       {rows.length > 0 && (
         <div className="flex items-center gap-3">
-          <div className="text-sm">Valid rows: {rows.length}</div>
+          <div className="text-sm" aria-live="polite">
+            Valid rows: {rows.length}
+          </div>
           <Button type="button" onClick={uploadValid} disabled={uploading}>
             {uploading ? "Importing..." : "Import"}
           </Button>
         </div>
       )}
 
-      {result && <div className="text-sm">{result}</div>}
+      {result && (
+        <div className="text-sm" aria-live="polite">
+          {result}
+        </div>
+      )}
     </div>
   );
 }
