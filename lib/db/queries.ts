@@ -167,7 +167,9 @@ export async function listBuyerHistory(buyerId: string) {
 export type DashboardStats = {
   total: number;
   statusCounts: Record<string, number>;
-  updatedTrend: { day: string; count: number }[]; 
+  updatedTrend: { day: string; count: number }[];
+  convertedThisWeek: number;
+  newLeadsToday: number;
 };
 
 export async function getDashboardStats(
@@ -199,7 +201,6 @@ export async function getDashboardStats(
     count: number;
   }>;
 
-  // Fill missing days
   const map = new Map<string, number>();
   for (const r of rowsRaw) {
     const d = new Date(r.day);
@@ -221,5 +222,27 @@ export async function getDashboardStats(
     days.push({ day: key, count: map.get(key) ?? 0 });
   }
 
-  return { total: Number(total), statusCounts, updatedTrend: days };
+  // Converted this week
+  const convRes = await db.execute(
+    sql`SELECT count(*)::int AS count FROM buyers WHERE owner_id = ${ownerId} AND status = 'Converted' AND updated_at >= date_trunc('week', now())`
+  );
+  const convertedThisWeek = Number(
+    (convRes as unknown as Array<{ count: number }>)[0]?.count ?? 0
+  );
+
+  // New leads today
+  const newRes = await db.execute(
+    sql`SELECT count(*)::int AS count FROM buyers WHERE owner_id = ${ownerId} AND created_at >= date_trunc('day', now())`
+  );
+  const newLeadsToday = Number(
+    (newRes as unknown as Array<{ count: number }>)[0]?.count ?? 0
+  );
+
+  return {
+    total: Number(total),
+    statusCounts,
+    updatedTrend: days,
+    convertedThisWeek,
+    newLeadsToday,
+  };
 }

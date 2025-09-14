@@ -35,7 +35,7 @@ export default async function HomePage() {
   return (
     <div className="mx-auto max-w-6xl space-y-6 p-6">
       <h1 className="text-2xl font-semibold">Dashboard</h1>
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-5">
         <div className="rounded-md border p-4">
           <div className="text-sm opacity-70">Total buyers</div>
           <div className="text-2xl font-semibold">{stats.total}</div>
@@ -45,6 +45,16 @@ export default async function HomePage() {
           <div className="text-2xl font-semibold">{topStatus}</div>
         </div>
         <div className="rounded-md border p-4">
+          <div className="text-sm opacity-70">Converted this week</div>
+          <div className="text-2xl font-semibold">
+            {stats.convertedThisWeek}
+          </div>
+        </div>
+        <div className="rounded-md border p-4">
+          <div className="text-sm opacity-70">New leads today</div>
+          <div className="text-2xl font-semibold">{stats.newLeadsToday}</div>
+        </div>
+        <div className="rounded-md border p-4 md:col-span-1 md:col-start-5">
           <div className="text-sm opacity-70">Updated last 7 days</div>
           <div className="flex items-end gap-1 pt-2">
             {stats.updatedTrend.map((d) => (
