@@ -55,6 +55,7 @@ export const buyerCreateSchema = z
     status: statusEnum.optional(),
     notes: z.string().max(1000).optional().nullable(),
     tags: z.array(z.string()).max(50).optional(),
+    attachment_url: z.string().url().max(2048).optional(),
   })
   .superRefine((data, ctx) => {
     // Conditional: bhk required for Apartment/Villa
@@ -96,7 +97,7 @@ export const buyerSearchParamsSchema = z.object({
   order: z.enum(["asc", "desc"]).optional(),
 });
 
-export const buyerCsvRowSchema = buyerCreateSchema; // same fields as create
+export const buyerCsvRowSchema = buyerCreateSchema;
 
 export const buyerCsvSchema = z
   .array(buyerCsvRowSchema)

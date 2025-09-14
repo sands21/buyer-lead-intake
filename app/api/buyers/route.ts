@@ -48,6 +48,7 @@ function toCamelCase(
     status: v.status as string | undefined,
     notes: (v.notes as string | undefined) ?? null,
     tags: (v.tags as string[] | undefined) ?? [],
+    attachmentUrl: (v.attachment_url as string | undefined) ?? null,
   };
 }
 

@@ -1,0 +1,1 @@
+ALTER TABLE "buyers" ADD COLUMN "attachment_url" text;

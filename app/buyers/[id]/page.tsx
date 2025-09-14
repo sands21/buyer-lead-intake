@@ -8,6 +8,7 @@ import { buyerCreateSchema } from "@/lib/validations/buyer";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { TagInput } from "@/components/forms/TagInput";
+import { createSupabaseBrowserClient } from "@/lib/supabase";
 
 type FormValues = Partial<z.infer<typeof buyerCreateSchema>> & {
   updatedAt?: string;
@@ -27,6 +28,8 @@ export default function BuyerDetailPage() {
   const [history, setHistory] = useState<HistoryItem[]>([]);
 
   const form = useForm<FormValues>({});
+  const [uploading, setUploading] = useState(false);
+  const [attachmentUrl, setAttachmentUrl] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -56,6 +59,7 @@ export default function BuyerDetailPage() {
         tags: data.buyer.tags ?? [],
         updatedAt: data.buyer.updatedAt,
       });
+      setAttachmentUrl(data.buyer.attachmentUrl ?? null);
       setLoading(false);
     }
     load();
@@ -79,6 +83,44 @@ export default function BuyerDetailPage() {
     }
     form.setValue("updatedAt", data.updatedAt);
     toast.success("Buyer updated");
+  }
+
+  async function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const supabase = createSupabaseBrowserClient();
+      const ext = file.name.split(".").pop() || "bin";
+      const path = `${id}/${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from("attachments")
+        .upload(path, file, { upsert: true, cacheControl: "3600" });
+      if (upErr) throw upErr;
+      const { data } = supabase.storage.from("attachments").getPublicUrl(path);
+      const publicUrl = data.publicUrl;
+      // save URL to record
+      const res = await fetch(`/api/buyers/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          attachment_url: publicUrl,
+          updatedAt: form.getValues("updatedAt"),
+        }),
+      });
+      if (!res.ok) throw new Error("Failed to save attachment");
+      const updated = await res.json();
+      form.setValue("updatedAt", updated.updatedAt);
+      setAttachmentUrl(publicUrl);
+      toast.success("Attachment uploaded");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Upload failed";
+      toast.error(message);
+    } finally {
+      setUploading(false);
+      // reset input value to allow same file re-select
+      e.currentTarget.value = "";
+    }
   }
 
   async function onDelete() {
@@ -334,6 +376,31 @@ export default function BuyerDetailPage() {
               onChange={(next) => form.setValue("tags", next)}
               disabled={saving}
             />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1">Attachment</label>
+            {attachmentUrl ? (
+              <div className="flex items-center gap-3 text-sm">
+                <a href={attachmentUrl} target="_blank" className="underline">
+                  View current
+                </a>
+                <button
+                  type="button"
+                  className="rounded-md border px-2 py-1"
+                  onClick={() => setAttachmentUrl(null)}
+                >
+                  Remove (just clears preview)
+                </button>
+              </div>
+            ) : (
+              <input
+                type="file"
+                aria-label="Upload attachment"
+                onChange={onFileChange}
+                disabled={uploading}
+              />
+            )}
           </div>
 
           <input type="hidden" {...form.register("updatedAt")} />

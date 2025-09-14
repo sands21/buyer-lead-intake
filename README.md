@@ -72,7 +72,7 @@ Make sure `.env.local` contains a valid `DATABASE_URL` before running Drizzle CL
 ## What's done vs skipped
 
 - Done: core CRUD, SSR list with filters/search, CSV import/export (transactional), optimistic concurrency and history, Zod validation, migrations, tests, dashboard, rate limiting, basic accessibility.
-- Skipped / optional: admin role UI, file attachment upload, advanced full-text index (basic ILIKE search implemented).
+- Skipped / optional: advanced full-text index (basic ILIKE search implemented).
 
 ## Deployment checklist (Vercel + Supabase)
 

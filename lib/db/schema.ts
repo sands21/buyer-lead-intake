@@ -29,10 +29,11 @@ export const buyers = pgTable(
     source: text("source").notNull(),
     status: text("status").notNull().default("New"),
     notes: text("notes"),
+    attachmentUrl: text("attachment_url"),
     tags: text("tags")
       .array()
       .default(sql`'{}'::text[]`),
-    ownerId: uuid("owner_id").notNull(), // REFERENCES auth.users(id)
+    ownerId: uuid("owner_id").notNull(), 
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
   },

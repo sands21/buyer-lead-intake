@@ -15,6 +15,13 @@
       "when": 1757840859547,
       "tag": "0001_crazy_mathemanic",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1757853015737,
+      "tag": "0002_charming_meggan",
+      "breakpoints": true
     }
   ]
 }

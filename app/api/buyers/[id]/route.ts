@@ -90,6 +90,7 @@ export async function PUT(req: Request, { params }: Params) {
     status: parsed.data.status,
     notes: parsed.data.notes ?? null,
     tags: parsed.data.tags ?? [],
+    attachmentUrl: parsed.data.attachment_url ?? null,
   };
 
   const result = await updateBuyer(
