@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getServerSession } from "@/lib/auth";
 import { listBuyers } from "@/lib/db/queries";
 import { redirect } from "next/navigation";
+import { StatusQuickActions } from "@/components/tables/StatusQuickActions";
 
 type Filters = {
   search: string | null;
@@ -206,7 +207,16 @@ export default async function BuyersPage({
                 <td className="py-2">{r.fullName}</td>
                 <td className="py-2">{r.phone}</td>
                 <td className="py-2">{r.city}</td>
-                <td className="py-2">{r.status}</td>
+                <td className="py-2">
+                  <StatusQuickActions
+                    id={r.id}
+                    status={r.status}
+                    updatedAtISO={(r.updatedAt
+                      ? new Date(r.updatedAt)
+                      : new Date()
+                    ).toISOString()}
+                  />
+                </td>
                 <td className="py-2 text-right">
                   <Link href={`/buyers/${r.id}`} className="underline">
                     View
