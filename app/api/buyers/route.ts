@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
-import { buyerCreateSchema } from "@/lib/validations/buyer";
+import {
+  buyerCreateSchema,
+  buyerSearchParamsSchema,
+} from "@/lib/validations/buyer";
 import { getServerSession } from "@/lib/auth";
 import { createBuyer } from "@/lib/db/queries";
+import { listBuyers } from "@/lib/db/queries";
 import { buyers } from "@/lib/db/schema";
 
 function toCamelCase(
@@ -74,4 +78,26 @@ export async function POST(req: Request) {
     const message = e instanceof Error ? e.message : "Unknown error";
     return NextResponse.json({ error: message }, { status: 500 });
   }
+}
+
+export async function GET(req: Request) {
+  const user = await getServerSession();
+  if (!user)
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { searchParams } = new URL(req.url);
+  const query = Object.fromEntries(searchParams.entries());
+  const parsed = buyerSearchParamsSchema.safeParse(query);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "Invalid query", issues: parsed.error.issues },
+      { status: 400 }
+    );
+  }
+
+  const { rows, total } = await listBuyers({
+    ownerId: user.id,
+    ...parsed.data,
+  });
+  return NextResponse.json({ rows, total });
 }
